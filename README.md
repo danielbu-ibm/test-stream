@@ -10,9 +10,13 @@
 [![semantic-release](https://img.shields.io/badge/%20%20%F0%9F%93%A6%F0%9F%9A%80-semantic--release-e10079.svg)](https://github.com/semantic-release/semantic-release)
 <!-- BEGIN OVERVIEW HOOK -->
 ## Overview
-Editing this file
+* [test-stream](#test-stream)
+* [Examples](./examples)
+    * [Basic example](./examples/basic)
+    * [Complete example](./examples/complete)
+* [Contributing](#contributing)
 
-## terraform-ibm-module-template
+## test-stream
 <!-- END OVERVIEW HOOK -->
 
 <!-- Remove the content in this H2 heading after completing the steps -->
