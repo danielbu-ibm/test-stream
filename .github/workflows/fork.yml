@@ -23,7 +23,9 @@ jobs:
 
       - name: Validate PAT
         run: |
-          echo "First few characters of PAT: ${${secrets.TEST_PAT}:0:4}"
+          PAT_VALUE="${{ secrets.TEST_PAT }}"
+          echo "First few characters of PAT: ${PAT_VALUE:0:4}"
+      
 
       - name: Test PAT with GitHub API
         run: |
