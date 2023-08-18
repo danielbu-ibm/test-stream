@@ -38,7 +38,8 @@ jobs:
           BRANCH_NAME="pr-fork-${{ github.event.pull_request.number }}"
           git checkout -b $BRANCH_NAME
           # Push the new branch to the main repository using the TOKEN for authentication
-          git push https://${{secrets.TOKEN}}@github.com/${{github.repository}} $BRANCH_NAME
+          git push https://${{secrets.TOKEN}}@github.com/${{github.repository}} HEAD:$BRANCH_NAME
+
       
 
       - name: Inform contributor about new branch
