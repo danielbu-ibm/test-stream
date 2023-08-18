@@ -1,0 +1,81 @@
+name: Sync Forked PR with New Branch
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+
+jobs:
+  sync:
+    # Ensure the workflow is triggered only for PRs from forks
+    if: github.event.pull_request.head.repo.full_name != github.repository
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          # Fetch the specific commit from the forked PR
+          ref: ${{ github.event.pull_request.head.sha }}
+          # Fetch all branches and tags to ensure complete history
+          fetch-depth: 0
+
+      - name: Check if branch exists
+        id: checkbranch
+        run: |
+          # Define the branch name based on the PR number
+          BRANCH_NAME="pr-fork-${{ github.event.pull_request.number }}"
+          # Check if the branch already exists in the main repo
+          EXISTS=$(git ls-remote --heads origin $BRANCH_NAME | wc -l)
+          # Set an output variable to indicate if the branch exists
+          echo "::set-output name=branch_exists::$EXISTS"
+
+      - name: Create and push new branch for PR
+        # Execute this step only if the branch doesn't exist
+        if: steps.checkbranch.outputs.branch_exists == '0'
+        run: |
+          BRANCH_NAME="pr-fork-${{ github.event.pull_request.number }}"
+          git checkout -b $BRANCH_NAME
+          # Push the new branch to the main repository
+          git push origin $BRANCH_NAME
+
+      - name: Inform contributor about new branch
+        # Execute this step only if a new branch was created
+        if: steps.checkbranch.outputs.branch_exists == '0'
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{secrets.GITHUB_TOKEN}}
+          script: |
+            # Post a comment on the PR informing the contributor about the new branch
+            github.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: 'A new branch has been created for your pull request. Our core team will review and make necessary changes. Thank you for your contribution!'
+            })
+
+      - name: Sync changes and check for conflicts
+        # Execute this step only if the branch already exists
+        if: steps.checkbranch.outputs.branch_exists == '1'
+        run: |
+          BRANCH_NAME="pr-fork-${{ github.event.pull_request.number }}"
+          git fetch origin $BRANCH_NAME
+          git checkout $BRANCH_NAME
+          # Try to merge changes from the forked PR. If conflicts are detected, create a conflict.txt file
+          git merge ${{ github.event.pull_request.head.sha }} --allow-unrelated-histories || echo "Conflicts detected" > conflict.txt
+
+      - name: Inform contributor about conflicts
+        # Execute this step only if conflicts were detected during the merge
+        if: steps.checkbranch.outputs.branch_exists == '1' && exist('conflict.txt')
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{secrets.GITHUB_TOKEN}}
+          script: |
+            # Post a comment on the PR informing the contributor about the detected conflicts
+            github.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: 'Conflicts have been detected in your pull request. Please resolve them and push the changes to your fork.'
+            })
