@@ -21,6 +21,22 @@ jobs:
           # Fetch all branches and tags to ensure complete history
           fetch-depth: 0
 
+      - name: Validate PAT
+        run: |
+          echo "First few characters of PAT: ${${secrets.TEST_PAT}:0:4}"
+
+      - name: Test PAT with GitHub API
+        run: |
+          curl -H "Authorization: token ${{secrets.TEST_PAT}}" https://api.github.com/repos/${{github.repository}}
+
+      - name: Test Git Clone with PAT
+        run: |
+          git clone https://${{secrets.TEST_PAT}}@github.com/${{github.repository}} test_clone_dir
+          
+      - name: Print Environment Variables
+        run: |
+          env
+
       - name: Check if branch exists
         id: checkbranch
         run: |
