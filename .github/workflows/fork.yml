@@ -37,9 +37,9 @@ jobs:
         run: |
           BRANCH_NAME="pr-fork-${{ github.event.pull_request.number }}"
           git checkout -b $BRANCH_NAME
-          # Authenticate using TOKEN and push the new branch to the main repository
-          git remote set-url origin https://${{secrets.TOKEN}}@github.com/${{github.repository}}
-          git push origin $BRANCH_NAME
+          # Push the new branch to the main repository using the TOKEN for authentication
+          git push https://${{secrets.TOKEN}}@github.com/${{github.repository}} $BRANCH_NAME
+      
 
       - name: Inform contributor about new branch
         # Execute this step only if a new branch was created
