@@ -14,7 +14,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v2
         with:
           # Fetch the specific commit from the forked PR
           ref: ${{ github.event.pull_request.head.sha }}
@@ -43,7 +43,7 @@ jobs:
       - name: Inform contributor about new branch
         # Execute this step only if a new branch was created
         if: steps.checkbranch.outputs.branch_exists == '0'
-        uses: actions/github-script@v6
+        uses: actions/github-script@v3
         with:
           github-token: ${{secrets.GITHUB_TOKEN}}
           script: |
@@ -65,10 +65,19 @@ jobs:
           # Try to merge changes from the forked PR. If conflicts are detected, create a conflict.txt file
           git merge ${{ github.event.pull_request.head.sha }} --allow-unrelated-histories || echo "Conflicts detected" > conflict.txt
 
+      - name: Check for conflict file
+        id: checkconflict
+        run: |
+          if [[ -f "conflict.txt" ]]; then
+            echo "::set-output name=conflict::true"
+          else
+            echo "::set-output name=conflict::false"
+          fi
+
       - name: Inform contributor about conflicts
         # Execute this step only if conflicts were detected during the merge
-        if: steps.checkbranch.outputs.branch_exists == '1' && exist('conflict.txt')
-        uses: actions/github-script@v6
+        if: steps.checkbranch.outputs.branch_exists == '1' && steps.checkconflict.outputs.conflict == 'true'
+        uses: actions/github-script@v3
         with:
           github-token: ${{secrets.GITHUB_TOKEN}}
           script: |
