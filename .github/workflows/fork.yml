@@ -37,17 +37,16 @@ jobs:
         run: |
           BRANCH_NAME="pr-fork-${{ github.event.pull_request.number }}"
           git checkout -b $BRANCH_NAME
-          # Push the new branch to the main repository using the TOKEN for authentication
-          git push https://${{secrets.TOKEN}}@github.com/${{github.repository}} HEAD:$BRANCH_NAME
+          # Push the new branch to the main repository using the TEST_PAT for authentication
+          git push https://${{secrets.TEST_PAT}}@github.com/${{github.repository}} HEAD:$BRANCH_NAME
 
-      
 
       - name: Inform contributor about new branch
         # Execute this step only if a new branch was created
         if: env.branch_exists == '0'
         uses: actions/github-script@v6
         with:
-          github-token: ${{secrets.TOKEN}}
+          github-token: ${{secrets.TEST_PAT}}
           script: |
             # Post a comment on the PR informing the contributor about the new branch
             github.issues.createComment({
@@ -81,7 +80,7 @@ jobs:
         if: env.branch_exists == '1' && env.conflict == 'true'
         uses: actions/github-script@v6
         with:
-          github-token: ${{secrets.TOKEN}}
+          github-token: ${{secrets.TEST_PAT}}
           script: |
             # Post a comment on the PR informing the contributor about the detected conflicts
             github.issues.createComment({
@@ -90,4 +89,3 @@ jobs:
               repo: context.repo.repo,
               body: 'Conflicts have been detected in your pull request. Please resolve them and push the changes to your fork.'
             })
-
