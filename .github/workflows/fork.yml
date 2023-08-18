@@ -28,12 +28,12 @@ jobs:
           BRANCH_NAME="pr-fork-${{ github.event.pull_request.number }}"
           # Check if the branch already exists in the main repo
           EXISTS=$(git ls-remote --heads origin $BRANCH_NAME | wc -l)
-          # Set an output variable to indicate if the branch exists
-          echo "::set-output name=branch_exists::$EXISTS"
+          # Set an environment variable to indicate if the branch exists
+          echo "branch_exists=$EXISTS" >> $GITHUB_ENV
 
       - name: Create and push new branch for PR
         # Execute this step only if the branch doesn't exist
-        if: steps.checkbranch.outputs.branch_exists == '0'
+        if: env.branch_exists == '0'
         run: |
           BRANCH_NAME="pr-fork-${{ github.event.pull_request.number }}"
           git checkout -b $BRANCH_NAME
@@ -43,7 +43,7 @@ jobs:
 
       - name: Inform contributor about new branch
         # Execute this step only if a new branch was created
-        if: steps.checkbranch.outputs.branch_exists == '0'
+        if: env.branch_exists == '0'
         uses: actions/github-script@v6
         with:
           github-token: ${{secrets.TOKEN}}
@@ -58,7 +58,7 @@ jobs:
 
       - name: Sync changes and check for conflicts
         # Execute this step only if the branch already exists
-        if: steps.checkbranch.outputs.branch_exists == '1'
+        if: env.branch_exists == '1'
         run: |
           BRANCH_NAME="pr-fork-${{ github.event.pull_request.number }}"
           git fetch origin $BRANCH_NAME
@@ -66,9 +66,18 @@ jobs:
           # Try to merge changes from the forked PR. If conflicts are detected, create a conflict.txt file
           git merge ${{ github.event.pull_request.head.sha }} --allow-unrelated-histories || echo "Conflicts detected" > conflict.txt
 
+      - name: Check for conflict file
+        id: checkconflict
+        run: |
+          if [[ -f "conflict.txt" ]]; then
+            echo "conflict=true" >> $GITHUB_ENV
+          else
+            echo "conflict=false" >> $GITHUB_ENV
+          fi
+
       - name: Inform contributor about conflicts
         # Execute this step only if conflicts were detected during the merge
-        if: steps.checkbranch.outputs.branch_exists == '1' && exist('conflict.txt')
+        if: env.branch_exists == '1' && env.conflict == 'true'
         uses: actions/github-script@v6
         with:
           github-token: ${{secrets.TOKEN}}
@@ -80,3 +89,4 @@ jobs:
               repo: context.repo.repo,
               body: 'Conflicts have been detected in your pull request. Please resolve them and push the changes to your fork.'
             })
+
